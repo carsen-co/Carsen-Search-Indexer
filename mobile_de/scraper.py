@@ -3,11 +3,7 @@ from requests import get
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 
-from settings import HEADERS, MATCH_RATIO, _MDE_MAKES_DICT
-
-BASE_URL = "https://suchen.mobile.de/fahrzeuge/search.html?damageUnrepaired=NO_DAMAGE_UNREPAIRED&isSearchRequest=true&scopeId=C&sfmr=false"
-PRICE_KEYS = ["Gross"]
-REG_KEYS = ["New vehicle", "New car"]
+from settings import HEADERS, MATCH_RATIO, REG_KEYS, PRICE_KEYS, _MDE_MAKES_DICT
 
 
 def search_url(inp: list, db: bool) -> list:
@@ -87,7 +83,7 @@ def make_model_matcher(car_make: str, car_model: str) -> list:
             )
             if make["n"].lower() == og[0]:
                 car_make = str(make["i"])
-                database += str(make["n"]) + "_"
+                database += str(make["n"]).replace(" ", "-") + "_"
                 if not og[1] == "any" or not og[1] == "":
                     model_matcher = []
                     for model in make["models"]:
@@ -107,7 +103,7 @@ def make_model_matcher(car_make: str, car_model: str) -> list:
 
         if car_make == og[0] and any(x > MATCH_RATIO for x in make_matcher):
             car_make = _MDE_MAKES_DICT[make_matcher.index(max(make_matcher))]["i"]
-            database += str(car_make["n"]) + "_"
+            database += str(car_make["n"]).replace(" ", "-") + "_"
             model_matcher = []
             for model in _MDE_MAKES_DICT[make_matcher.index(max(make_matcher))]["models"]:
                 model_matcher.append(
@@ -155,7 +151,7 @@ def index_db_finder(url: str) -> str:
     if not og[0] == 0 or not og[0] == "":
         for make in _MDE_MAKES_DICT:
             if make["i"] == og[0]:
-                database += str(make["n"]) + "_"
+                database += str(make["n"]).replace(" ", "-") + "_"
                 if not og[1] == 0 or not og[1] == "":
                     for model in make["models"]:
                         if model["v"] == og[1]:
@@ -224,7 +220,7 @@ def get_page_listings(url: str) -> list:
 
 
 def get_car_data(url: str, find_db=False) -> list:
-    response = get(url + "&lang=en", headers=HEADERS)
+    response = get(url, headers=HEADERS)
     soup = BeautifulSoup(response.content, "html.parser")
 
     # title
@@ -301,7 +297,7 @@ def get_car_data(url: str, find_db=False) -> list:
 
 
 def check_car_price(url: str) -> int:
-    response = get(url + "&lang=en", headers=HEADERS)
+    response = get(url, headers=HEADERS)
     soup = BeautifulSoup(response.content, "html.parser")
 
     try:
